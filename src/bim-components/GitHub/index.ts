@@ -46,6 +46,9 @@ export class GitHub extends OBC.Component {
     this.owner = owner;
     this.repo = repo;
 
+    const rateLimit = await this.octokit.request('GET /rate_limit');
+    console.log(`Remaining requests: ${rateLimit.data.rate.remaining}`);
+
     // A request to the contents, this allow us to get the files info
     const response = await this.octokit.request(
       "GET /repos/{owner}/{repo}/contents/",
@@ -88,11 +91,12 @@ export class GitHub extends OBC.Component {
         // Remove all menus using BUI.ContextMenu.removeMenus()
         BUI.ContextMenu.removeMenus();
   
-        const selectedCommitSha = (event.target as HTMLSelectElement).value;
+        const selectedCommitShaString = (event.target as HTMLSelectElement).value;
+        const selectedCommitSha = JSON.parse(selectedCommitShaString);
   
         // Retrieve the file with the selected commit SHA
         if (selectedCommitSha) {
-          await this.getFile(file, selectedCommitSha);
+          await this.getFile(file, selectedCommitSha.sha);
         }
       });
   
@@ -161,7 +165,7 @@ export class GitHub extends OBC.Component {
     if (!this.owner || !this.repo) {
       return;
     }
-    console.log(file);
+    // console.log(file);
 
     this.removeCurrentModel();
 
