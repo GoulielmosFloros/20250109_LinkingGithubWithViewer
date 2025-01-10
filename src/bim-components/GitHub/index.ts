@@ -126,7 +126,7 @@ export class GitHub extends OBC.Component {
     if (!this.owner || !this.repo) {
       return;
     }
-    console.log(file);
+    // console.log(file);
 
     this.removeCurrentModel();
 
