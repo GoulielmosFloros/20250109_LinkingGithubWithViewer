@@ -48,6 +48,14 @@ export class GitHub extends OBC.Component {
 
     const rateLimit = await this.octokit.request('GET /rate_limit');
     console.log(`Remaining requests: ${rateLimit.data.rate.remaining}`);
+    const resetTimestamp = rateLimit.data.rate.reset;
+    const currentTime = Math.floor(Date.now() / 1000); // current time in seconds
+    const timeRemaining = resetTimestamp - currentTime; // time remaining until reset
+
+    const minutesRemaining = Math.floor(timeRemaining / 60);
+    const secondsRemaining = timeRemaining % 60;
+
+console.log(`You can make another request in ${minutesRemaining} minutes and ${secondsRemaining} seconds.`);
 
     // A request to the contents, this allow us to get the files info
     const response = await this.octokit.request(
