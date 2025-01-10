@@ -1,0 +1,40 @@
+Development Steps
+
+Modify the fileData interface to only contain the name as string and commits of type BUI.Dropdown.
+
+Remove the matchingCommits array from the component.
+
+Modify the filesList array from the component. Instead of filtering a specific file, filter all files that end with .ifc.
+
+Modify the getFile function to receive a new argument called commitSha of type string. In the request of the same function the ref should receive this new argument.
+
+In the getCommits function, get rid of the whole for that iterates the commits. Create a new for loop that iterates the index and file from the filesList array entries. Check if the file exists or else continue.
+
+Create a bim-dropdown element called commitsDrop. Set vertical and required attributes to true.
+
+Create an event listener on change that removes the menus using BUI.ContextMenu.removeMenus() and retrieve the file with the dropdown values via getFile.
+
+Create a for loop to iterate through the commits.data.
+
+Do a request using octokit to get the commit’s data using the SHA to this endpoint: "GET /repos/{owner}/{repo}/commits/{ref}”, assign it to a constant called commitsData.
+
+Map the commits.data.files to a constant commitFiles to get the names of the files associated to that commit. Check if there’s data in the array or continue.
+
+If the array contains the file in turn, create a bim-option. The label attribute is the commitData.data.commit.message and the value is an object of the format { file, sha: commit.sha }. Append the option to the commitsDrop.
+
+Outside of the commits for loop, do file.commits = commitsDrop.
+
+Reassing the file object to the filesList array using the index.
+
+In the user-interface file, remove the onGetFileClick function.
+
+In the BUI.html return of the stateful component, instead of mapping the matching commits array, map through the filesList.
+
+Replace the inner BUI.html return with this:
+
+`
+<div style="display: flex; justify-content: space-between;">
+  <bim-label style="flex-grow: 2;">${file.name}</bim-label>
+  <div style="max-width: 200px;">${file.commits}</div>
+</div>
+`;

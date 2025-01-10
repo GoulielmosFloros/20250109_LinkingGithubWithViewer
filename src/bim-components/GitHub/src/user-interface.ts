@@ -24,10 +24,6 @@ export function GitUI(components: OBC.Components) {
     git.connect(owner, repo);
   };
 
-  const onGetFileClick = (file: fileData) => {
-    git.getFile(file);
-  };
-
   // Stateful component
   // filesList contains the final HTML structure, update contains a function to update
   // filesList
@@ -43,11 +39,11 @@ export function GitUI(components: OBC.Components) {
       // the commit and a button to retrieve that file.
       return BUI.html`
         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-          ${git.matchingCommits.map((file) => {
+          ${git.filesList.map((file) => {
             return BUI.html`
-            <div style="display: flex;">
-              <bim-label style="flex-grow: 2;">${file.commitMessage}</bim-label>
-              <bim-button style="max-width: 29px;" icon="material-symbols:download" @click=${() => onGetFileClick(file)}></bim-button>
+            <div style="display: flex; justify-content: space-between;">
+              <bim-label style="flex-grow: 2;">${file.name}</bim-label>
+              <div style="max-width: 200px;">${file.commits}</div>
             </div>
               `;
           })}

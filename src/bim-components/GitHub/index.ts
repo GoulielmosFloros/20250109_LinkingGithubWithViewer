@@ -2,12 +2,12 @@ import * as OBC from "@thatopen/components";
 // Your lint can have trouble accessing octokit, use this line below
 // eslint-disable-next-line import/no-unresolved
 import { Octokit } from "octokit";
+import * as BUI from "@thatopen/ui";
 
 // This is an interface for handling the data we need from the files
 export interface fileData {
   name: string;
-  commitSha: string;
-  commitMessage: string;
+  commits: BUI.Dropdown;
 }
 
 export class GitHub extends OBC.Component {
@@ -22,7 +22,6 @@ export class GitHub extends OBC.Component {
   // These Arrays will help us store the files info from the repo
   // And then filter the commits that match an specific file
   filesList: fileData[] = [];
-  matchingCommits: fileData[] = [];
 
   // An event to update the UI, see below.
   onConnect: OBC.Event<void>;
@@ -58,7 +57,7 @@ export class GitHub extends OBC.Component {
 
     // Filter a specific file
     this.filesList = response.data.filter((file: fileData) =>
-      file.name.endsWith("NAV-IPI-ET1_E07-ZZZ-M3D-EST.ifc"),
+      file.name.endsWith(".ifc"),
     );
 
     // Call the commits to build the matchingCommits array so that the
@@ -74,41 +73,77 @@ export class GitHub extends OBC.Component {
     if (!this.owner || !this.repo) {
       return;
     }
-
-    // Commits endpoint. The data is separated, the files do
-    // not contain the commits, but the commits do contain the files.
-    const commits = await this.octokit.request(
-      "GET /repos/{owner}/{repo}/commits/",
-      {
-        owner: this.owner,
-        repo: this.repo,
-      },
-    );
-
-    // Iterate each commit and get more detailed data, like the files
-    for (const commit of commits.data) {
-      const commitData = await this.octokit.request(
-        "GET /repos/{owner}/{repo}/commits/{ref}",
+  
+    for (const [index, file] of this.filesList.entries()) {
+      if (!file) {
+        continue;
+      }
+  
+      const commitsDrop = document.createElement("bim-dropdown");
+      commitsDrop.vertical = true;
+      commitsDrop.required = true;
+  
+      // Add event listener to handle dropdown value changes
+      commitsDrop.addEventListener("change", async (event) => {
+        // Remove all menus using BUI.ContextMenu.removeMenus()
+        BUI.ContextMenu.removeMenus();
+  
+        const selectedCommitSha = (event.target as HTMLSelectElement).value;
+  
+        // Retrieve the file with the selected commit SHA
+        if (selectedCommitSha) {
+          await this.getFile(file, selectedCommitSha);
+        }
+      });
+  
+      // Commits endpoint. The data is separated, the files do
+      // not contain the commits, but the commits do contain the files.
+      const commits = await this.octokit.request(
+        "GET /repos/{owner}/{repo}/commits/",
         {
           owner: this.owner,
           repo: this.repo,
-          ref: commit.sha,
         },
       );
-
-      // Get an array with the files.
-      const commitFiles = commitData.data.files?.map((file) => file.filename);
-      if (!commitFiles) continue;
-
-      // And if it's included in the commit, add the file, the SHA and the message
-      // The SHA is a unique identifier of the commit in the repo.
-      if (commitFiles.includes(this.filesList[0].name)) {
-        this.matchingCommits.push({
-          ...this.filesList[0],
-          commitSha: commitData.data.sha,
-          commitMessage: commitData.data.commit.message,
-        });
+  
+      // Iterate each commit and get more detailed data, like the files
+      for (const commit of commits.data) {
+        const commitData = await this.octokit.request(
+          "GET /repos/{owner}/{repo}/commits/{ref}",
+          {
+            owner: this.owner,
+            repo: this.repo,
+            ref: commit.sha,
+          },
+        );
+  
+        // Get an array with the files.
+        const commitFiles = commitData.data.files?.map((file) => file.filename);
+        if (!commitFiles) continue;
+  
+        // If the file in turn is included in the commit, create an option
+        if (commitFiles.includes(file.name)) {
+          const option = document.createElement("bim-option");
+  
+          // Set the label to the commit message
+          option.setAttribute("label", commitData.data.commit.message);
+  
+          // Set the value to a JSON string containing the file and commit SHA
+          option.setAttribute(
+            "value",
+            JSON.stringify({ file, sha: commit.sha }),
+          );
+  
+          // Append the option to the dropdown
+          commitsDrop.appendChild(option);
+        }
       }
+  
+      // Outside of the commits for loop, assign commitsDrop to file.commits
+      file.commits = commitsDrop;
+  
+      // Reassign the updated file object back to the filesList array
+      this.filesList[index] = file;
     }
   }
 
@@ -122,11 +157,11 @@ export class GitHub extends OBC.Component {
     }
   }
 
-  async getFile(file: fileData) {
+  async getFile(file: fileData, commitSha: string) {
     if (!this.owner || !this.repo) {
       return;
     }
-    // console.log(file);
+    console.log(file);
 
     this.removeCurrentModel();
 
@@ -141,7 +176,7 @@ export class GitHub extends OBC.Component {
         owner: this.owner,
         repo: this.repo,
         path: file.name,
-        ref: file.commitSha,
+        ref: commitSha,
       },
     );
 
